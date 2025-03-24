@@ -35,11 +35,22 @@ def generate_signals(data: DataArray, short_ma: int, long_ma: int) -> SignalArra
     
     # Generate signals
     signals = [0] * len(data)
+    position = 0  # 0 = no position, 1 = long, -1 = short
+    
     for i in range(long_ma, len(data)):
-        if short_ma_series.iloc[i] > long_ma_series.iloc[i] and short_ma_series.iloc[i-1] <= long_ma_series.iloc[i-1]:
-            signals[i] = 1  # Buy signal
-        elif short_ma_series.iloc[i] < long_ma_series.iloc[i] and short_ma_series.iloc[i-1] >= long_ma_series.iloc[i-1]:
-            signals[i] = -1  # Sell signal
+        # Crossover conditions
+        buy_signal = short_ma_series.iloc[i] > long_ma_series.iloc[i] and short_ma_series.iloc[i-1] <= long_ma_series.iloc[i-1]
+        sell_signal = short_ma_series.iloc[i] < long_ma_series.iloc[i] and short_ma_series.iloc[i-1] >= long_ma_series.iloc[i-1]
+        
+        if buy_signal and position <= 0:
+            position = 1
+            signals[i] = 1
+        elif sell_signal and position >= 0:
+            position = -1
+            signals[i] = -1
+        else:
+            # Maintain position
+            signals[i] = position
     
     return signals
 

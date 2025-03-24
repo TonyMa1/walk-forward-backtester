@@ -91,14 +91,29 @@ class WalkForwardOptimization:
         splits = self.split_data()
         results = []
         
-        for train_data, test_data in splits:
+        for i, (train_data, test_data) in enumerate(splits):
+            print(f"\nProcessing window {i+1}/{len(splits)}:")
+            print(f"  Train data: {len(train_data)} periods from {train_data.index[0]} to {train_data.index[-1]}")
+            print(f"  Test data: {len(test_data)} periods from {test_data.index[0]} to {test_data.index[-1]}")
+            
             # Optimize parameters on training data
             best_params, train_metric = optimize_params(train_data, **kwargs)
+            print(f"  Optimized parameters: {best_params}")
+            print(f"  Training Sharpe: {train_metric:.4f}")
             
             # Apply optimized strategy to test data
             test_signals = strategy(test_data, **best_params)
+            non_zero_signals = sum(1 for s in test_signals if s != 0)
+            print(f"  Test signals generated: {non_zero_signals} (non-zero out of {len(test_signals)})")
+            
+            # Ensure we have valid signals
+            if non_zero_signals == 0:
+                print(f"  Warning: No trading signals generated for test window {i+1}")
+            
             test_returns = calculate_returns(test_signals, test_data)
             test_sharpe = calculate_sharpe_ratio(test_returns)
+            print(f"  Test Sharpe: {test_sharpe:.4f}")
+            print(f"  Test Returns: {np.sum(test_returns):.4f}")
             
             # Store results
             window_result = {

@@ -10,7 +10,7 @@ import pandas as pd
 
 from .types import DataArray, SignalArray
 
-def calculate_returns(signals: SignalArray, data: DataArray) -> float:
+def calculate_returns(signals: SignalArray, data: DataArray) -> np.ndarray:
     """Calculate strategy returns based on signals and price data.
     
     Args:
@@ -18,7 +18,7 @@ def calculate_returns(signals: SignalArray, data: DataArray) -> float:
         data: Price data array
         
     Returns:
-        float: Total strategy returns
+        np.ndarray: Array of strategy returns for each period
     """
     if len(signals) != len(data):
         raise ValueError("Signals and data must have the same length")
@@ -33,7 +33,7 @@ def calculate_returns(signals: SignalArray, data: DataArray) -> float:
     # Calculate returns (shift signals by 1 to align with price changes)
     returns = signals[:-1] * price_changes
     
-    return float(np.sum(returns))
+    return returns  # Return the full array of returns, not just the sum
 
 def calculate_sharpe_ratio(returns: Union[List[float], np.ndarray], risk_free_rate: float = 0.02) -> float:
     """Calculate the Sharpe ratio for a series of returns.
@@ -46,6 +46,10 @@ def calculate_sharpe_ratio(returns: Union[List[float], np.ndarray], risk_free_ra
         float: Sharpe ratio
     """
     returns = np.array(returns)
+    
+    # Handle empty arrays or all zeros
+    if len(returns) == 0 or np.all(returns == 0):
+        return 0.0
     
     # Calculate excess returns
     excess_returns = returns - (risk_free_rate / 252)  # Convert annual to daily

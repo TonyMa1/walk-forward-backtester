@@ -55,7 +55,7 @@ def generate_signals(
         min_holding_period: Minimum number of periods to hold a position
         
     Returns:
-        SignalArray: List of trading signals (1 for buy, -1 for sell, 0 for hold)
+        SignalArray: List of trading signals
     """
     if not isinstance(data, pd.Series):
         data = pd.Series(data)
@@ -65,30 +65,43 @@ def generate_signals(
     
     # Initialize signals
     signals = [0] * len(data)
-    position = 0  # Current position (0: none, 1: long)
-    entry_price = 0  # Entry price for current position
-    holding_periods = 0  # Number of periods current position has been held
     
-    for i in range(atr_window, len(data)):
+    # Trading state variables
+    in_position = False
+    position_start = 0
+    stop_loss = 0
+    
+    # Simple trend detection using short-term moving average
+    short_ma = data.rolling(window=5).mean()
+    
+    for i in range(atr_window + 5, len(data)):
         current_price = data.iloc[i]
         
-        if position == 0:  # No position
-            # Enter long if price is above ATR-based threshold
-            if current_price > data.iloc[i-1] + atr[i] * atr_multiplier:
+        # If not in a position, look for entry points
+        if not in_position:
+            # Entry signal: price above short MA and ATR is valid
+            if current_price > short_ma.iloc[i] and not np.isnan(atr[i]):
                 signals[i] = 1
-                position = 1
-                entry_price = current_price
-                holding_periods = 0
+                in_position = True
+                position_start = i
+                stop_loss = current_price - (atr[i] * atr_multiplier)
         
-        elif position == 1:  # Long position
-            holding_periods += 1
-            
-            # Exit if stop loss is hit and minimum holding period is met
-            stop_loss = entry_price - atr[i] * atr_multiplier
-            if current_price < stop_loss and holding_periods >= min_holding_period:
-                signals[i] = -1
-                position = 0
-                holding_periods = 0
+        # If in a position
+        else:
+            # Check minimum holding period
+            if (i - position_start) >= min_holding_period:
+                # Check stop loss
+                if current_price < stop_loss:
+                    signals[i] = -1
+                    in_position = False
+                else:
+                    # Update stop loss (trailing stop)
+                    new_stop = current_price - (atr[i] * atr_multiplier)
+                    stop_loss = max(stop_loss, new_stop)
+                    signals[i] = 1  # Maintain position signal
+            else:
+                # Within minimum holding period, maintain position
+                signals[i] = 1
     
     return signals
 

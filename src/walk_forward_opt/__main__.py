@@ -13,17 +13,24 @@ from walk_forward_opt.strategies.ma_crossover import MACrossoverStrategy
 from walk_forward_opt.strategies.atr_stop_loss import ATRStopLossStrategy
 
 def generate_sample_data(n_days: int = 1000, volatility: float = 0.02) -> pd.Series:
-    """Generate sample price data for testing.
+    """Generate sample price data for testing with clearer trends.
     
     Args:
         n_days: Number of days of data to generate
         volatility: Daily price volatility
         
     Returns:
-        pd.Series: Sample price data
+        pd.Series: Sample price data with trends and cycles
     """
     dates = pd.date_range(start='2020-01-01', periods=n_days, freq='D')
-    prices = 100 * (1 + np.random.normal(0, volatility, n_days).cumsum())
+    
+    # Create a price series with clear trends and cycles
+    t = np.arange(n_days)
+    trend = 0.1 * t  # Add upward trend
+    cycles = 10 * np.sin(t/100) + 5 * np.sin(t/50)  # Add cyclical patterns
+    noise = volatility * np.random.normal(0, 1, n_days).cumsum()  # Random noise
+    
+    prices = 100 + trend + cycles + noise
     return pd.Series(prices, index=dates)
 
 def main() -> None:

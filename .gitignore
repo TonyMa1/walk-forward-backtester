@@ -45,4 +45,7 @@ build/
 *.egg-info/
 
 # Logs
-*.log 
+*.log
+
+# Cursor
+.cursorrules 
